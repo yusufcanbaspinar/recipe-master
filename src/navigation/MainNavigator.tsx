@@ -16,13 +16,13 @@ import VerificationScreen from '../features/auth/VerificationScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-function Tabs() {
+function Tabs({ setIsAuthenticated }: { setIsAuthenticated: (val: boolean) => void }) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
-          let iconName: 'home' | 'heart' | 'history' | 'account' = 'home';
+          let iconName: string = 'home';
 
           if (route.name === 'Home') iconName = 'home';
           else if (route.name === 'Favorites') iconName = 'heart';
@@ -36,7 +36,9 @@ function Tabs() {
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Anasayfa' }} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favoriler' }} />
       <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'Geçmiş' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
+      <Tab.Screen name="Profile">
+        {props => <ProfileScreen {...props} setIsAuthenticated={setIsAuthenticated} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -51,21 +53,23 @@ const MainNavigator = () => {
         {!isAuthenticated ? (
           <>
             <Stack.Screen name="Login">
-              {(props) => <LoginScreen {...props} setLoginContact={setLoginContact} />}
+              {props => <LoginScreen {...props} setLoginContact={setLoginContact} />}
             </Stack.Screen>
             <Stack.Screen name="Verification">
-            {(props) => (
-              <VerificationScreen
-                {...props}
-                loginContact={loginContact}
-                setIsAuthenticated={setIsAuthenticated}
-              />
-            )}
-          </Stack.Screen>
+              {props => (
+                <VerificationScreen
+                  {...props}
+                  loginContact={loginContact}
+                  setIsAuthenticated={setIsAuthenticated}
+                />
+              )}
+            </Stack.Screen>
           </>
         ) : (
           <>
-            <Stack.Screen name="Tabs" component={Tabs} />
+            <Stack.Screen name="Tabs">
+              {props => <Tabs {...props} setIsAuthenticated={setIsAuthenticated} />}
+            </Stack.Screen>
             <Stack.Screen name="Recipe" component={RecipeScreen} options={{ headerShown: true, title: 'Tarif Hazırla' }} />
             <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} options={{ headerShown: true, title: 'Tarif Detayı' }} />
           </>

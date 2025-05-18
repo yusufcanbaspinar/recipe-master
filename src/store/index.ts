@@ -4,16 +4,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import favoritesReducer from './favoritesSlice';
 import historyReducer from './historySlice';
+import userReducer from './userSlice';
 
 const rootReducer = combineReducers({
   favorites: favoritesReducer,
   history: historyReducer,
+  user: userReducer,
 });
 
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['favorites', 'history'],
+  whitelist: ['favorites', 'history', 'user'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -22,7 +24,7 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // Redux Persist ile uyumlu
+      serializableCheck: false,
     }),
 });
 

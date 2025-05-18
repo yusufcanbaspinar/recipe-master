@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Text, Title, Button, List, Divider, Avatar, Switch } from 'react-native-paper';
-import { useDispatch } from 'react-redux';
+import { Text, Title, Button, List, Divider, Avatar } from 'react-native-paper';
+import { useDispatch, useSelector } from 'react-redux';
 import { clearHistory } from '../../store/historySlice';
 import { clearFavorites } from '../../store/favoritesSlice';
+import { RootState } from '../../store';
+import { clearUser } from '../../store/userSlice';
 
-const ProfileScreen = () => {
-  // Basit şekilde “Karanlık Mod” takibi örneği (ileride genişletebiliriz)
-  const [isDarkMode, setIsDarkMode] = useState(false);
+const ProfileScreen = ({ setIsAuthenticated }: { setIsAuthenticated: (val: boolean) => void }) => {
   const dispatch = useDispatch();
+  const userContact = useSelector((state: RootState) => state.user.contact);
 
   const handleClearHistory = () => {
     Alert.alert(
@@ -32,27 +33,34 @@ const ProfileScreen = () => {
     );
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Çıkış Yap",
+      "Uygulamadan çıkış yapmak istiyor musunuz?",
+      [
+        { text: "İptal", style: "cancel" },
+        {
+          text: "Evet",
+          onPress: () => {
+            dispatch(clearUser());
+            setIsAuthenticated(false);
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.profileHeader}>
         <Avatar.Icon size={72} icon="account" />
-        <Title style={styles.userName}>Misafir Kullanıcı</Title>
+        <Title style={styles.userName}>
+          {userContact ? userContact : 'Misafir Kullanıcı'}
+        </Title>
       </View>
       <Divider style={{ marginVertical: 12 }} />
 
       <List.Section>
-        <List.Item
-          title="Karanlık Mod"
-          left={() => <List.Icon icon="theme-light-dark" />}
-          right={() => (
-            <Switch
-              value={isDarkMode}
-              onValueChange={setIsDarkMode}
-              disabled
-            />
-          )}
-          description="(Yakında)"
-        />
         <List.Item
           title="Uygulama Dili"
           left={() => <List.Icon icon="translate" />}
@@ -78,6 +86,14 @@ const ProfileScreen = () => {
         style={styles.button}
       >
         Favorileri Temizle
+      </Button>
+      <Button
+        mode="contained"
+        icon="logout"
+        onPress={handleLogout}
+        style={styles.button}
+      >
+        Çıkış Yap
       </Button>
     </View>
   );

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView } from 'react-native';
 import { Text, TextInput, Button, Title } from 'react-native-paper';
+import { useDispatch } from 'react-redux';
+import { setUserContact } from '../../store/userSlice';
 
 const FAKE_CODE = '123456'; // Simülasyon, gerçek API ile değişecek
 
@@ -14,12 +16,14 @@ const VerificationScreen = ({
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const dispatch = useDispatch();
 
   const handleVerify = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       if (code === FAKE_CODE) {
+        dispatch(setUserContact(loginContact));
         setIsAuthenticated(true);
       } else {
         setError('Kod hatalı, lütfen tekrar deneyin.');
