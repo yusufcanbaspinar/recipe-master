@@ -1,82 +1,60 @@
-import React, { useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-
+import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from '../features/home/HomeScreen';
 import FavoritesScreen from '../features/favorites/FavoritesScreen';
 import HistoryScreen from '../features/history/HistoryScreen';
 import ProfileScreen from '../features/profile/ProfileScreen';
 import RecipeScreen from '../features/recipe/RecipeScreen';
 import RecipeDetailScreen from '../features/recipe/RecipeDetailScreen';
-import LoginScreen from '../features/auth/LoginScreen';
-import VerificationScreen from '../features/auth/VerificationScreen';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
-function Tabs({ setIsAuthenticated }: { setIsAuthenticated: (val: boolean) => void }) {
+function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ color, size }) => {
-          let iconName: string = 'home';
-
+          let iconName = '';
           if (route.name === 'Home') iconName = 'home';
-          else if (route.name === 'Favorites') iconName = 'heart';
+          else if (route.name === 'Favorites') iconName = 'heart-outline';
           else if (route.name === 'History') iconName = 'history';
-          else if (route.name === 'Profile') iconName = 'account';
-
+          else if (route.name === 'Profile') iconName = 'account-outline';
           return <MaterialCommunityIcons name={iconName} color={color} size={size} />;
         },
+        tabBarActiveTintColor: '#6c63ff',
+        tabBarInactiveTintColor: '#777',
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Anasayfa' }} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favoriler' }} />
       <Tab.Screen name="History" component={HistoryScreen} options={{ title: 'Geçmiş' }} />
-      <Tab.Screen name="Profile">
-        {props => <ProfileScreen {...props} setIsAuthenticated={setIsAuthenticated} />}
-      </Tab.Screen>
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
     </Tab.Navigator>
   );
 }
 
-const MainNavigator = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loginContact, setLoginContact] = useState('');
-
+export default function MainNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isAuthenticated ? (
-          <>
-            <Stack.Screen name="Login">
-              {props => <LoginScreen {...props} setLoginContact={setLoginContact} />}
-            </Stack.Screen>
-            <Stack.Screen name="Verification">
-              {props => (
-                <VerificationScreen
-                  {...props}
-                  loginContact={loginContact}
-                  setIsAuthenticated={setIsAuthenticated}
-                />
-              )}
-            </Stack.Screen>
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Tabs">
-              {props => <Tabs {...props} setIsAuthenticated={setIsAuthenticated} />}
-            </Stack.Screen>
-            <Stack.Screen name="Recipe" component={RecipeScreen} options={{ headerShown: true, title: 'Tarif Hazırla' }} />
-            <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} options={{ headerShown: true, title: 'Tarif Detayı' }} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator>
+      <Stack.Screen
+        name="MainTabs"
+        component={MainTabs}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Recipe"
+        component={RecipeScreen}
+        options={{ title: 'Tarif Hazırla' }}
+      />
+      <Stack.Screen
+        name="RecipeDetail"
+        component={RecipeDetailScreen}
+        options={{ title: 'Tarif Detayı' }}
+      />
+    </Stack.Navigator>
   );
-};
-
-export default MainNavigator;
+}

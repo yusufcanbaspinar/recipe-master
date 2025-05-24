@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Text, TextInput, Button, Title, Chip } from 'react-native-paper';
 import { suggestRecipe } from '../../api/recipeApi';
+import { useDispatch } from 'react-redux';
+import { addHistory } from '../../store/historySlice';
 
 const RecipeScreen = ({ navigation }: any) => {
   const [ingredients, setIngredients] = useState<string[]>([]);
@@ -12,12 +14,7 @@ const RecipeScreen = ({ navigation }: any) => {
   const [maxTime, setMaxTime] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const [result, setResult] = useState<null | {
-    title: string;
-    ingredients: string[];
-    steps: string[];
-    description: string;
-  }>(null);
+  const dispatch = useDispatch();
 
   const handleAddIngredient = () => {
     if (inputValue.trim() && !ingredients.includes(inputValue.trim())) {
@@ -32,11 +29,10 @@ const RecipeScreen = ({ navigation }: any) => {
 
   const handleSubmit = async () => {
     if (ingredients.length === 0) {
-      Alert.alert("Malzeme giriniz", "En az bir malzeme eklemelisiniz.");
+      alert("En az bir malzeme eklemelisiniz.");
       return;
     }
     setLoading(true);
-    setResult(null);
     try {
       const payload: any = {
         ingredients,
@@ -47,126 +43,133 @@ const RecipeScreen = ({ navigation }: any) => {
       if (maxTime) payload.max_time = Number(maxTime);
 
       const data = await suggestRecipe(payload);
-      setResult(data);
-    } catch (e: any) {
-      Alert.alert("Hata", "Tarif alınamadı. " + (e.response?.data?.detail || e.message));
-    } finally {
       setLoading(false);
+
+      dispatch(addHistory(data));
+      navigation.navigate('RecipeDetail', { recipe: data });
+    } catch (e: any) {
+      setLoading(false);
+      alert("Tarif alınamadı: " + (e.response?.data?.detail || e.message));
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Title>Tarif Hazırla</Title>
-      <TextInput
-        label="Malzeme Ekle"
-        value={inputValue}
-        onChangeText={setInputValue}
-        onSubmitEditing={handleAddIngredient}
-        style={styles.input}
-      />
-      <Button mode="outlined" onPress={handleAddIngredient} style={styles.addBtn}>
-        Malzeme Ekle
-      </Button>
-      <View style={styles.chipContainer}>
-        {ingredients.map(item => (
-          <Chip key={item} style={styles.chip} onClose={() => handleRemoveIngredient(item)}>
-            {item}
-          </Chip>
-        ))}
-      </View>
-      <TextInput
-        label="Ekstra İstekler (örn: fırında, düşük kalorili)"
-        value={extra}
-        onChangeText={setExtra}
-        style={styles.input}
-      />
-      <TextInput
-        label="Kaç Kişilik?"
-        value={servings}
-        onChangeText={setServings}
-        style={styles.input}
-        keyboardType="number-pad"
-      />
-      <TextInput
-        label="Maksimum Kalori (isteğe bağlı)"
-        value={calorieLimit}
-        onChangeText={setCalorieLimit}
-        style={styles.input}
-        keyboardType="number-pad"
-      />
-      <TextInput
-        label="Maksimum Süre (dakika, isteğe bağlı)"
-        value={maxTime}
-        onChangeText={setMaxTime}
-        style={styles.input}
-        keyboardType="number-pad"
-      />
-      <Button
-        mode="contained"
-        onPress={handleSubmit}
-        loading={loading}
-        disabled={loading}
-        style={styles.submitBtn}
-      >
-        Tarif Hazırla
-      </Button>
-
-      {loading && <ActivityIndicator size="large" style={{ marginTop: 24 }} />}
-      {result && (
-        <View style={styles.resultCard}>
-          <Title>{result.title}</Title>
-          <Text style={styles.resultLabel}>Malzemeler:</Text>
-          {result.ingredients.map((item, idx) => (
-            <Text key={idx}>• {item}</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Title style={styles.title}>Tarif Hazırla</Title>
+        <TextInput
+          label="Malzeme Ekle"
+          value={inputValue}
+          onChangeText={setInputValue}
+          onSubmitEditing={handleAddIngredient}
+          style={styles.input}
+          mode="outlined"
+          returnKeyType="done"
+        />
+        <Button
+          mode="contained-tonal"
+          onPress={handleAddIngredient}
+          style={styles.addBtn}
+          icon="plus"
+          contentStyle={{ flexDirection: 'row-reverse' }}
+        >
+          Malzeme Ekle
+        </Button>
+        <View style={styles.chipContainer}>
+          {ingredients.map(item => (
+            <Chip key={item} style={styles.chip} onClose={() => handleRemoveIngredient(item)}>
+              {item}
+            </Chip>
           ))}
-          <Text style={styles.resultLabel}>Adımlar:</Text>
-          {result.steps.map((step, idx) => (
-            <Text key={idx}>{idx + 1}. {step}</Text>
-          ))}
-          <Text style={styles.resultLabel}>Açıklama:</Text>
-          <Text>{result.description}</Text>
         </View>
-      )}
-    </ScrollView>
+        <TextInput
+          label="Ekstra İstekler (örn: fırında, düşük kalorili)"
+          value={extra}
+          onChangeText={setExtra}
+          style={styles.input}
+          mode="outlined"
+        />
+        <TextInput
+          label="Kaç Kişilik?"
+          value={servings}
+          onChangeText={setServings}
+          style={styles.input}
+          keyboardType="number-pad"
+          mode="outlined"
+        />
+        <TextInput
+          label="Maksimum Kalori (isteğe bağlı)"
+          value={calorieLimit}
+          onChangeText={setCalorieLimit}
+          style={styles.input}
+          keyboardType="number-pad"
+          mode="outlined"
+        />
+        <TextInput
+          label="Maksimum Süre (dakika, isteğe bağlı)"
+          value={maxTime}
+          onChangeText={setMaxTime}
+          style={styles.input}
+          keyboardType="number-pad"
+          mode="outlined"
+        />
+        <Button
+          mode="contained"
+          onPress={handleSubmit}
+          loading={loading}
+          disabled={loading}
+          style={styles.submitBtn}
+          contentStyle={{ paddingVertical: 8 }}
+        >
+          Tarif Hazırla
+        </Button>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: 22,
     backgroundColor: '#fff',
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
+  title: {
+    alignSelf: 'center',
+    marginBottom: 12,
+    fontWeight: 'bold',
+    fontSize: 22,
   },
   input: {
-    marginVertical: 6,
+    marginVertical: 7,
+    backgroundColor: '#fafaff',
+    borderRadius: 14,
   },
   addBtn: {
-    marginBottom: 10,
     alignSelf: 'flex-start',
+    marginVertical: 4,
+    borderRadius: 18,
   },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 8,
+    marginBottom: 10,
+    marginTop: 2,
+    gap: 6,
   },
   chip: {
-    marginRight: 8,
-    marginBottom: 4,
+    marginRight: 7,
+    marginBottom: 7,
     backgroundColor: '#eee',
+    borderRadius: 14,
+    fontSize: 16,
   },
   submitBtn: {
-    marginTop: 14,
-  },
-  resultCard: {
-    marginTop: 28,
-    padding: 18,
-    backgroundColor: '#fafafc',
-    borderRadius: 14,
-    elevation: 1,
-  },
-  resultLabel: {
-    marginTop: 12,
+    marginTop: 20,
+    borderRadius: 20,
     fontWeight: 'bold',
+    fontSize: 18,
   },
 });
 

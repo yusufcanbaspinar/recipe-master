@@ -1,23 +1,34 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Recipe } from '../types/Recipe';
 
-const initialState: Recipe[] = [];
+export interface Recipe {
+  title: string;
+  ingredients: string[];
+  steps: string[];
+  description: string;
+}
+
+interface FavoritesState {
+  items: Recipe[];
+}
+
+const initialState: FavoritesState = {
+  items: [],
+};
 
 const favoritesSlice = createSlice({
   name: 'favorites',
   initialState,
   reducers: {
-    addToFavorites: (state, action: PayloadAction<Recipe>) => {
-      if (!state.find((r) => r.id === action.payload.id)) {
-        state.unshift(action.payload);
+    addFavorite(state, action: PayloadAction<Recipe>) {
+      if (!state.items.some(item => item.title === action.payload.title)) {
+        state.items.push(action.payload);
       }
     },
-    removeFromFavorites: (state, action: PayloadAction<string>) => {
-      return state.filter((r) => r.id !== action.payload);
+    removeFavorite(state, action: PayloadAction<string>) {
+      state.items = state.items.filter(item => item.title !== action.payload);
     },
-    clearFavorites: () => [],
   },
 });
 
-export const { addToFavorites, removeFromFavorites, clearFavorites } = favoritesSlice.actions;
+export const { addFavorite, removeFavorite } = favoritesSlice.actions;
 export default favoritesSlice.reducer;

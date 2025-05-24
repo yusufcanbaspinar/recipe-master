@@ -1,18 +1,20 @@
 import React from 'react';
+import { Provider as ReduxProvider } from 'react-redux';
+import store from './src/store';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { NavigationContainer } from '@react-navigation/native';
 import MainNavigator from './src/navigation/MainNavigator';
-import { PaperProvider } from 'react-native-paper';
-import { Provider } from 'react-redux';
-import { store, persistor } from './src/store';
-import { PersistGate } from 'redux-persist/integration/react';
+import { StatusBar } from 'react-native';
 
 export default function App() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <PaperProvider>
+    <ReduxProvider store={store}>
+      <PaperProvider>
+        <NavigationContainer>
+          <StatusBar barStyle="dark-content" backgroundColor="#fff" />
           <MainNavigator />
-        </PaperProvider>
-      </PersistGate>
-    </Provider>
+        </NavigationContainer>
+      </PaperProvider>
+    </ReduxProvider>
   );
 }
