@@ -1,132 +1,132 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Button, TextInput, Chip, Title, ActivityIndicator, Card, IconButton } from 'react-native-paper';
-import { useDispatch } from 'react-redux';
-import { addToHistory } from '../../store/historySlice';
-import { addToFavorites, removeFromFavorites } from '../../store/favoritesSlice';
-import { Recipe } from '../../types/Recipe';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { Text, TextInput, Button, Title, Chip } from 'react-native-paper';
+import { suggestRecipe } from '../../api/recipeApi';
 
-const allIngredients = ['Domates', 'Salatalık', 'Biber', 'Soğan', 'Peynir', 'Tavuk', 'Makarna', 'Patates'];
-
-function generateId() {
-  return Math.random().toString(36).substr(2, 9) + Date.now();
-}
-
-const RecipeScreen = () => {
-  const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
-  const [extraFeature, setExtraFeature] = useState('');
+const RecipeScreen = ({ navigation }: any) => {
+  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [extra, setExtra] = useState('');
+  const [servings, setServings] = useState('');
+  const [calorieLimit, setCalorieLimit] = useState('');
+  const [maxTime, setMaxTime] = useState('');
   const [loading, setLoading] = useState(false);
-  const [recipeResult, setRecipeResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [savedRecipe, setSavedRecipe] = useState<Recipe | null>(null);
-  const [favorited, setFavorited] = useState(false);
 
-  const dispatch = useDispatch();
+  const [result, setResult] = useState<null | {
+    title: string;
+    ingredients: string[];
+    steps: string[];
+    description: string;
+  }>(null);
 
-  const toggleIngredient = (ingredient: string) => {
-    setSelectedIngredients((prev) =>
-      prev.includes(ingredient)
-        ? prev.filter((i) => i !== ingredient)
-        : [...prev, ingredient]
-    );
+  const handleAddIngredient = () => {
+    if (inputValue.trim() && !ingredients.includes(inputValue.trim())) {
+      setIngredients(prev => [...prev, inputValue.trim()]);
+      setInputValue('');
+    }
   };
 
-  // Dummy AI API
-  const getRecipe = async () => {
+  const handleRemoveIngredient = (item: string) => {
+    setIngredients(prev => prev.filter(i => i !== item));
+  };
+
+  const handleSubmit = async () => {
+    if (ingredients.length === 0) {
+      Alert.alert("Malzeme giriniz", "En az bir malzeme eklemelisiniz.");
+      return;
+    }
     setLoading(true);
-    setError(null);
-    setRecipeResult(null);
-    setSavedRecipe(null);
-    setFavorited(false);
-
+    setResult(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      const result = `İşte AI destekli örnek tarif:
-Malzemeler: ${selectedIngredients.join(', ')}
-${extraFeature ? `Ekstra Özellik: ${extraFeature}` : ''}
-Tarif: Malzemeleri doğrayın, karıştırın ve 20 dakika pişirin!`;
-
-      setRecipeResult(result);
-
-      const recipeObj: Recipe = {
-        id: generateId(),
-        ingredients: selectedIngredients,
-        feature: extraFeature,
-        createdAt: new Date().toISOString(),
-        result,
+      const payload: any = {
+        ingredients,
+        extra,
       };
+      if (servings) payload.servings = Number(servings);
+      if (calorieLimit) payload.calorie_limit = Number(calorieLimit);
+      if (maxTime) payload.max_time = Number(maxTime);
 
-      dispatch(addToHistory(recipeObj));
-      setSavedRecipe(recipeObj);
-    } catch (e) {
-      setError('Bir hata oluştu, lütfen tekrar deneyin.');
+      const data = await suggestRecipe(payload);
+      setResult(data);
+    } catch (e: any) {
+      Alert.alert("Hata", "Tarif alınamadı. " + (e.response?.data?.detail || e.message));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFavorite = () => {
-    if (savedRecipe && !favorited) {
-      dispatch(addToFavorites(savedRecipe));
-      setFavorited(true);
-    } else if (savedRecipe && favorited) {
-      dispatch(removeFromFavorites(savedRecipe.id));
-      setFavorited(false);
-    }
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Title style={styles.title}>Malzeme Seçimi</Title>
+      <Title>Tarif Hazırla</Title>
+      <TextInput
+        label="Malzeme Ekle"
+        value={inputValue}
+        onChangeText={setInputValue}
+        onSubmitEditing={handleAddIngredient}
+        style={styles.input}
+      />
+      <Button mode="outlined" onPress={handleAddIngredient} style={styles.addBtn}>
+        Malzeme Ekle
+      </Button>
       <View style={styles.chipContainer}>
-        {allIngredients.map((ingredient) => (
-          <Chip
-            key={ingredient}
-            selected={selectedIngredients.includes(ingredient)}
-            style={styles.chip}
-            onPress={() => toggleIngredient(ingredient)}
-          >
-            {ingredient}
+        {ingredients.map(item => (
+          <Chip key={item} style={styles.chip} onClose={() => handleRemoveIngredient(item)}>
+            {item}
           </Chip>
         ))}
       </View>
-
       <TextInput
-        label="Ekstra Özellik veya Not"
-        value={extraFeature}
-        onChangeText={setExtraFeature}
-        mode="outlined"
+        label="Ekstra İstekler (örn: fırında, düşük kalorili)"
+        value={extra}
+        onChangeText={setExtra}
         style={styles.input}
-        placeholder="(örn: vegan, hızlı, az yağlı...)"
       />
-
+      <TextInput
+        label="Kaç Kişilik?"
+        value={servings}
+        onChangeText={setServings}
+        style={styles.input}
+        keyboardType="number-pad"
+      />
+      <TextInput
+        label="Maksimum Kalori (isteğe bağlı)"
+        value={calorieLimit}
+        onChangeText={setCalorieLimit}
+        style={styles.input}
+        keyboardType="number-pad"
+      />
+      <TextInput
+        label="Maksimum Süre (dakika, isteğe bağlı)"
+        value={maxTime}
+        onChangeText={setMaxTime}
+        style={styles.input}
+        keyboardType="number-pad"
+      />
       <Button
         mode="contained"
-        style={styles.submitButton}
-        onPress={getRecipe}
-        disabled={selectedIngredients.length === 0 || loading}
+        onPress={handleSubmit}
+        loading={loading}
+        disabled={loading}
+        style={styles.submitBtn}
       >
-        Tarif Önerisi Al
+        Tarif Hazırla
       </Button>
 
-      {loading && <ActivityIndicator animating={true} style={styles.loader} size="large" />}
-      {error && <Text style={{ color: 'red', marginTop: 12 }}>{error}</Text>}
-
-      {recipeResult && savedRecipe && (
-        <Card style={styles.resultCard}>
-          <Card.Content>
-            <Text variant="bodyLarge">{recipeResult}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-              <IconButton
-                icon={favorited ? 'heart' : 'heart-outline'}
-                iconColor={favorited ? 'red' : undefined}
-                size={24}
-                onPress={handleFavorite}
-              />
-              <Text>{favorited ? 'Favorilere eklendi' : 'Favorilere ekle'}</Text>
-            </View>
-          </Card.Content>
-        </Card>
+      {loading && <ActivityIndicator size="large" style={{ marginTop: 24 }} />}
+      {result && (
+        <View style={styles.resultCard}>
+          <Title>{result.title}</Title>
+          <Text style={styles.resultLabel}>Malzemeler:</Text>
+          {result.ingredients.map((item, idx) => (
+            <Text key={idx}>• {item}</Text>
+          ))}
+          <Text style={styles.resultLabel}>Adımlar:</Text>
+          {result.steps.map((step, idx) => (
+            <Text key={idx}>{idx + 1}. {step}</Text>
+          ))}
+          <Text style={styles.resultLabel}>Açıklama:</Text>
+          <Text>{result.description}</Text>
+        </View>
       )}
     </ScrollView>
   );
@@ -134,32 +134,39 @@ Tarif: Malzemeleri doğrayın, karıştırın ve 20 dakika pişirin!`;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
+    padding: 20,
+    backgroundColor: '#fff',
   },
-  title: {
-    marginBottom: 16,
-    textAlign: 'center',
+  input: {
+    marginVertical: 6,
+  },
+  addBtn: {
+    marginBottom: 10,
+    alignSelf: 'flex-start',
   },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 24,
+    marginBottom: 8,
   },
   chip: {
-    margin: 4,
+    marginRight: 8,
+    marginBottom: 4,
+    backgroundColor: '#eee',
   },
-  input: {
-    marginBottom: 24,
-  },
-  submitButton: {
-    marginTop: 16,
-  },
-  loader: {
-    marginTop: 24,
+  submitBtn: {
+    marginTop: 14,
   },
   resultCard: {
-    marginTop: 24,
-    backgroundColor: '#fafafa',
+    marginTop: 28,
+    padding: 18,
+    backgroundColor: '#fafafc',
+    borderRadius: 14,
+    elevation: 1,
+  },
+  resultLabel: {
+    marginTop: 12,
+    fontWeight: 'bold',
   },
 });
 
