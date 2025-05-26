@@ -1,81 +1,120 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, Button, Card, Title } from 'react-native-paper';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text, Title, Button, Card } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HomeScreen = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const navigation = useNavigation();
+  const history = useSelector((state: RootState) => state.history.items);
+
+  const lastRecipes = history.slice(0, 3);
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.container}>
-        {/* Üst bölüm - sıcak karşılama */}
-        <Text variant="titleLarge" style={styles.welcomeText}>
-          Hoş geldin! Bugün ne pişirmek istersin?
-        </Text>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.headerBlock}>
+          <Title style={styles.title}>Hoşgeldin!</Title>
+          <Text style={styles.subtitle}>Bugün ne pişirmek istersin?</Text>
+          <Button
+            mode="contained"
+            style={styles.recipeBtn}
+            onPress={() => navigation.navigate('Recipe')}
+          >
+            Tarif Hazırla
+          </Button>
+        </View>
 
-        {/* Tarif hazırla butonu */}
-        <Button
-          mode="contained"
-          style={styles.recipeButton}
-          contentStyle={styles.recipeButtonContent}
-          labelStyle={styles.recipeButtonLabel}
-          onPress={() => navigation.navigate('Recipe')}
-        >
-          Tarif Hazırla
-        </Button>
-
-        {/* Geçmiş tarifler */}
-        <Title style={styles.sectionTitle}>Geçmiş Tarifler</Title>
-        <Card style={styles.recipeCard}>
-          <Card.Content>
-            <Title>Kremalı Makarna</Title>
-            <Text variant="bodyMedium">15 Mayıs 2025</Text>
-          </Card.Content>
-        </Card>
-      </View>
+        <View style={styles.historyBlock}>
+          <Text style={styles.sectionTitle}>Geçmiş Tarifler</Text>
+          {lastRecipes.length === 0 && <Text style={styles.emptyText}>Henüz geçmiş tarif yok.</Text>}
+          {lastRecipes.map((recipe, idx) => (
+            <Card
+              key={recipe.title + idx}
+              style={styles.card}
+              onPress={() => navigation.navigate('RecipeDetail', { recipe })}
+            >
+              <Card.Content>
+                <Title style={{ fontSize: 16 }}>{recipe.title}</Title>
+                <Text numberOfLines={2}>{recipe.description}</Text>
+              </Card.Content>
+            </Card>
+          ))}
+          {history.length > 3 && (
+            <Button
+              mode="text"
+              style={styles.moreBtn}
+              onPress={() => navigation.navigate('History')}
+            >
+              Daha fazla tarif +
+            </Button>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeContainer: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#fff',
   },
   container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    flexGrow: 1,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 22,
+    paddingTop: 34, // Başlığı aşağı alır, cihazdan cihaza safe-area uyumlu olur
+    paddingBottom: 24,
   },
-  welcomeText: {
-    marginBottom: 32,
+  headerBlock: {
+    marginBottom: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    marginBottom: 4,
     fontWeight: 'bold',
-    fontSize: 22,
+    fontSize: 24,
+    alignSelf: 'center',
   },
-  recipeButton: {
-    marginBottom: 40,
-    borderRadius: 20,
-    alignSelf: 'stretch',
+  subtitle: {
+    marginBottom: 16,
+    fontSize: 16,
+    color: '#666',
+    alignSelf: 'center',
   },
-  recipeButtonContent: {
-    height: 48,
+  recipeBtn: {
+    borderRadius: 18,
+    alignSelf: 'center',
+    width: 180,
+    marginBottom: 2,
   },
-  recipeButtonLabel: {
-    fontSize: 18,
+  historyBlock: {
+    marginTop: 12,
   },
   sectionTitle: {
-    marginBottom: 12,
-    marginTop: 8,
-    fontWeight: '600',
+    fontWeight: 'bold',
     fontSize: 18,
+    marginBottom: 10,
+    marginLeft: 4,
   },
-  recipeCard: {
-    marginBottom: 16,
-    borderRadius: 16,
+  card: {
+    marginBottom: 10,
+    borderRadius: 12,
     elevation: 2,
+  },
+  moreBtn: {
+    marginTop: 10,
+    alignSelf: 'flex-end',
+  },
+  emptyText: {
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 14,
+    fontSize: 15,
   },
 });
 
